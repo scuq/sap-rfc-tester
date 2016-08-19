@@ -1,0 +1,8 @@
+ashost: saphost
+sysnr: 00
+client: 000
+lang: EN
+user: dev
+passwd: dev
+trace: 3
+loglevel: debug

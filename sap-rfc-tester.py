@@ -12,7 +12,7 @@ import codecs
 try:
 	import rrdtool
 except:
-	logger.error("error while importing rrdtool module.")
+	logger.error("error while importing rrdtool module")
 
 if not sys.platform == "win32":
 	from logging.handlers import SysLogHandler
@@ -164,7 +164,7 @@ def execrfc(rfc_module_name,sap_module_args,sap_conn_config_file,discover_rfc,wr
 			ela_log(logger,ts_start,ts_last,"rfc sap module parameters set")
 			ts_last=time.time()
 
-			ela_log(logger,ts_start,ts_last,"invoking sap module.")
+			ela_log(logger,ts_start,ts_last,"invoking sap module")
 			ts_last=time.time()
 
 			rfc_obj.invoke()
@@ -172,7 +172,7 @@ def execrfc(rfc_module_name,sap_module_args,sap_conn_config_file,discover_rfc,wr
 			d = rfc_obj.handle.parameters
 
 
-			ela_log(logger,ts_start,ts_last,"result "+str(sys.getsizeof(d))+"bytes returned.")
+			ela_log(logger,ts_start,ts_last,"result "+str(sys.getsizeof(d))+"bytes returned")
 			ts_last=time.time()
 
 			if write_to_stats_log:
@@ -198,9 +198,9 @@ def execrfc(rfc_module_name,sap_module_args,sap_conn_config_file,discover_rfc,wr
                                                                         '--step', '2s',
                                                                         '--start', 'now-1h',
                                                                         'DS:runtime:GAUGE:20s:-10:60',
-                                                                        'RRA:MIN:0.5:1:3600',
-                                                                        'RRA:MAX:0.5:1:3600',
-                                                                        'RRA:AVERAGE:0.5:1:3600',
+                                                                        'RRA:MIN:0.5:1:43200',
+                                                                        'RRA:MAX:0.5:1:43200',
+                                                                        'RRA:AVERAGE:0.5:1:43200',
                                                                          )
 			rrdtool.update(stats_rrd_file, 'N:'+_ts_elapsed_start_result)
 			rrdtool.graph(stats_rrd_file.replace(".rrd",".png"),
@@ -214,12 +214,12 @@ def execrfc(rfc_module_name,sap_module_args,sap_conn_config_file,discover_rfc,wr
                                                                         '--lower-limit', '-10',
                                                                         '--upper-limit', '50',
                                                                         'DEF:runtime='+stats_rrd_file+':runtime:AVERAGE',
-                                                                        'LINE:runtime#007F0E:s',
+                                                                        'LINE:runtime#007F0E:seconds',
                                                                         'HRULE:5#FF6A00',
                                                                         'HRULE:20#FF0000',
                                                                         'GPRINT:runtime:LAST:Current\:%8.5lf',
                                                                         'GPRINT:runtime:AVERAGE:Average\:%8.5lf',
-                                                                        'GPRINT:runtime:MIN:Maximum\:%8.5lf'
+                                                                        'GPRINT:runtime:MAX:Maximum\:%8.5lf'
                                                                         )
 
 
@@ -229,13 +229,13 @@ def main():
 
 	parser = OptionParser()
 	parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="enable verbose output")
-	parser.add_option("-d", "--discover-rfc", action="store_true", dest="discoverrfc", default=False, help="discover and prit rfc")
+	parser.add_option("-d", "--discover-rfc", action="store_true", dest="discoverrfc", default=False, help="discover and print rfc module")
 	parser.add_option("-r", "--rfcmodule", dest="rfcmodule", help="name of the sap remote function call module")
 	parser.add_option("-l", "--execute-loop", dest="executeloop", help="execute in an infinite loop with specified interval in seconds")
 	parser.add_option("-c", "--sapconconf", dest="sapconconf", help="config file path to sap connection config default ./sap.yml")
 	parser.add_option("-w", "--stats-logfile", dest="statslogfile", help="write to specified statistics logfile")
 	parser.add_option("", "--rrd", action="store_true", dest="statsrrd", default=False, help="write statistics to rrd database needs -w")
-	parser.add_option("-i", "--moduleargs", dest="moduleargs", help="sapmodule args json format")
+	parser.add_option("-i", "--moduleargs", dest="moduleargs", help="sap module args (json format)")
 
 
 	(options, args) = parser.parse_args()
@@ -260,7 +260,7 @@ def main():
 			sap_module_args = json.loads(options.moduleargs)
 
 		except:
-			logger.error("sap module argument parsing (-i) failed.")
+			logger.error("sap module argument parsing (-i) failed")
 			pass
 
 	if options.executeloop:

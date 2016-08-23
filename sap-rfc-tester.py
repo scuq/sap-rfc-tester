@@ -62,6 +62,7 @@ sap_types={
 
 def print_rfc_interface(method_name, conn=None):
 	if conn is None:
+		print SAP_CONNECTION
 		conn = sapnwrfc.base.rfc_connect(cfg=SAP_CONNECTION)
 	iface = conn.discover(method_name)
 	print(iface.name)
@@ -130,6 +131,9 @@ def execrfc(rfc_module_name,sap_module_args,sap_conn_config_file,discover_rfc,wr
 	ts_start=time.time()
 	ts_last=ts_start
 
+	_ts_elapsed_start_result = str("0.00000")
+	_ts_elapsed_connect_result = str("0.00000")
+	_ts_elapsed_execute_result = str("0.00000")
 		
 
 	ela_log(logger,ts_start,ts_last,"main started, using module: "+rfc_module_name)
@@ -142,6 +146,9 @@ def execrfc(rfc_module_name,sap_module_args,sap_conn_config_file,discover_rfc,wr
 	ts_last=time.time()
 
 	conn, ts_last = sap_connect(logger,ts_start,ts_last)
+	if write_to_stats_log:
+		_ts_elapsedo_connect_result = str('{:.5f}'.format(time.time()-ts_start))
+		_ts_connect = time.time()
 
 
 	if discover_rfc:
@@ -176,7 +183,8 @@ def execrfc(rfc_module_name,sap_module_args,sap_conn_config_file,discover_rfc,wr
 			ts_last=time.time()
 
 			if write_to_stats_log:
-				_ts_elapsed_start_result = str('{:.5f}'.format(time.time()-ts_start))
+				_ts_elapsed_execute_result = str('{:.5f}'.format(time.time()-_ts_connect))
+
 
 		except:
 			ela_log(logger,ts_start,ts_last,"error while invoking sap module: "+str(sys.exc_info()[0])+" "+str(sys.exc_info()[1]))
@@ -188,6 +196,9 @@ def execrfc(rfc_module_name,sap_module_args,sap_conn_config_file,discover_rfc,wr
 	ts_last = sap_disconnect(logger,ts_start,ts_last,conn)
 
 	if write_to_stats_log:
+		_ts_elapsed_start_result = str('{:.5f}'.format(time.time()-ts_start))
+
+	if write_to_stats_log:
 		file = codecs.open(stats_log_file, "a", "utf-8")
 		file.write(time.strftime("%Y-%d-%m %H:%M:%S", time.localtime())+";"+_ts_elapsed_start_result+"\n")
 		file.close()
@@ -197,24 +208,30 @@ def execrfc(rfc_module_name,sap_module_args,sap_conn_config_file,discover_rfc,wr
 				rrdtool.create(stats_rrd_file,
                                                                         '--step', '2s',
                                                                         '--start', 'now-1h',
-                                                                        'DS:runtime:GAUGE:20s:-10:60',
+                                                                        'DS:runtime:GAUGE:120s:-10:119',
+                                                                        'DS:connect:GAUGE:120s:-10:119',
+                                                                        'DS:execute:GAUGE:120s:-10:119',
                                                                         'RRA:MIN:0.5:1:43200',
                                                                         'RRA:MAX:0.5:1:43200',
                                                                         'RRA:AVERAGE:0.5:1:43200',
                                                                          )
-			rrdtool.update(stats_rrd_file, 'N:'+_ts_elapsed_start_result)
+			rrdtool.update(stats_rrd_file, 'N:'+_ts_elapsed_start_result+":"+_ts_elapsed_connect_result+":"+_ts_elapsed_execute_result)
 			rrdtool.graph(stats_rrd_file.replace(".rrd",".png"),
                                                                         '--imgformat', 'PNG',
                                                                         '--width', '1121',
                                                                         '--height', '313',
-                                                                        '--start', "now-1d",
+                                                                        '--start', "now-12h",
                                                                         '--end', "-1",
-                                                                        '--vertical-label', 'runtime',
+                                                                        '--vertical-label', 'seconds',
                                                                         '--title', 'Runtime Module '+rfc_module_name,
                                                                         '--lower-limit', '-10',
                                                                         '--upper-limit', '50',
-                                                                        'DEF:runtime='+stats_rrd_file+':runtime:AVERAGE',
-                                                                        'LINE:runtime#007F0E:seconds',
+                                                                        'DEF:runtime='+stats_rrd_file+':runtime:MAX',
+                                                                        'DEF:connect='+stats_rrd_file+':connect:MAX',
+                                                                        'DEF:execute='+stats_rrd_file+':execute:MAX',
+                                                                        'LINE:runtime#9E3C97:sum',
+                                                                        'LINE:connect#1D329B:connect',
+                                                                        'LINE:execute#2C9920:execute',
                                                                         'HRULE:5#FF6A00',
                                                                         'HRULE:20#FF0000',
                                                                         'GPRINT:runtime:LAST:Current\:%8.5lf',
@@ -278,7 +295,7 @@ def main():
 
 			write_to_rrd_db = True
 			if stats_log_file.count(".") > 0:
-				stats_rrd_file = stats_log_file.replace(stats_log_file.split(".")[-1],".rrd")
+				stats_rrd_file = stats_log_file.replace(stats_log_file.split(".")[-1],"rrd")
 			else:
 				stats_rrd_file = stats_log_file+".rrd"
 
